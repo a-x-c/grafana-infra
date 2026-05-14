@@ -11,6 +11,11 @@ name: Sync Grafana Template
 # Configuration (set in repo Settings → Variables):
 #   - GRAFANA_TEMPLATE_URL  (optional override — defaults to .template-vars TEMPLATE_URL)
 #   - GRAFANA_TEMPLATE_REF  (optional override — defaults to .template-vars TEMPLATE_REF, then "main")
+#
+# Secrets required (set in repo Settings → Secrets):
+#   - GRAFANA_INFRA_DEPLOY_KEY  SSH private key with read access to the
+#                               grafana template repo. The public half is
+#                               added as a deploy key on the template repo.
 
 on:
   schedule:
@@ -38,6 +43,11 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v6
+
+      - name: Load grafana-infra deploy key into ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GRAFANA_INFRA_DEPLOY_KEY }}
 
       - name: Resolve template URL + ref
         id: vars
