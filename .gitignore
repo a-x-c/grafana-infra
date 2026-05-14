@@ -15,3 +15,4 @@ services/grafana/.template-vars
 .DS_Store
 *.swp
 *.swo
+__pycache__/
