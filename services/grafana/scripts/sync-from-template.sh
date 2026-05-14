@@ -108,40 +108,60 @@ subst() {
     "$in_file" > "$out_file"
 
   # Cloud Run service names — only patched if CLOUD_RUN_SERVICES is set
-  # AND the templating list still contains the template's placeholder names
-  # ("service-one", "service-two", "service-three"). Once an app's services
-  # have been substituted in, leave the JSON alone — re-running json.dump
-  # would reformat indentation and escape non-ASCII (em-dashes etc.), causing
-  # spurious drift on every sync.
+  # AND the file still contains the template's placeholder service names.
+  # Once an app's services have been substituted in, leave the JSON alone.
+  # We do text-level substitution rather than json.load/dump so the file's
+  # original formatting (inline arrays, em-dashes, ...) survives untouched.
   if [ -n "${CLOUD_RUN_SERVICES:-}" ] && grep -q 'service-one\|service-two\|service-three' "$out_file"; then
     python3 - "$out_file" <<'PY'
-import json, os, sys
+import os, re, sys
 path = sys.argv[1]
 services = [s for s in os.environ["CLOUD_RUN_SERVICES"].split("|") if s]
 if not services:
     sys.exit(0)
-d = json.load(open(path))
-templating = d.get("templating", {}).get("list") or []
-changed = False
-for tmpl in templating:
-    if tmpl.get("name") not in {"service", "services"}:
-        continue
-    pipe = "|".join(services)
-    tmpl["query"] = pipe
-    tmpl["allValue"] = pipe
-    tmpl["options"] = [
-        {"selected": False, "text": s, "value": s} for s in services
-    ]
-    # Multi-select default to "All" so the dashboard works on first load.
-    if tmpl.get("multi"):
-        tmpl["options"].insert(0, {"selected": True, "text": "All", "value": "$__all"})
-        tmpl["current"] = {"selected": True, "text": ["All"], "value": ["$__all"]}
-    else:
-        tmpl["options"][0]["selected"] = True
-        tmpl["current"] = {"selected": False, "text": services[0], "value": services[0]}
-    changed = True
-if changed:
-    json.dump(d, open(path, "w"), indent=2, ensure_ascii=False)
+text = open(path).read()
+
+pipe = "|".join(services)
+comma = ",".join(services)
+text = text.replace(
+    '"allValue": "service-one|service-two|service-three"',
+    f'"allValue": "{pipe}"',
+)
+text = text.replace(
+    '"query": "service-one,service-two,service-three"',
+    f'"query": "{comma}"',
+)
+
+# Replace the inline 'options' array. The template ships exactly:
+#   "options": [
+#     {"selected": true, "text": "All", "value": "$__all"},
+#     {"selected": false, "text": "service-one", "value": "service-one"},
+#     {"selected": false, "text": "service-two", "value": "service-two"},
+#     {"selected": false, "text": "service-three", "value": "service-three"}
+#   ],
+# (indentation may vary). Match it as a multiline regex anchored on the
+# "service-one|two|three" tokens and rebuild with the actual services.
+options_re = re.compile(
+    r'"options": \[\s*\n'
+    r'(\s*)\{"selected": true, "text": "All", "value": "\$__all"\},\s*\n'
+    r'\s*\{"selected": false, "text": "service-one", "value": "service-one"\},\s*\n'
+    r'\s*\{"selected": false, "text": "service-two", "value": "service-two"\},\s*\n'
+    r'\s*\{"selected": false, "text": "service-three", "value": "service-three"\}\s*\n'
+    r'\s*\]'
+)
+
+def render_options(match: re.Match) -> str:
+    indent = match.group(1)
+    lines = ['"options": [', f'{indent}{{"selected": true, "text": "All", "value": "$__all"}},']
+    for i, s in enumerate(services):
+        comma_ = "," if i < len(services) - 1 else ""
+        lines.append(f'{indent}{{"selected": false, "text": "{s}", "value": "{s}"}}{comma_}')
+    # The closing bracket sits at the indent level of the array open.
+    lines.append(indent[:-2] + "]")
+    return "\n".join(lines)
+
+text = options_re.sub(render_options, text, count=1)
+open(path, "w").write(text)
 PY
   fi
 }
