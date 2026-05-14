@@ -3,7 +3,7 @@
   "title": "{{display_name}} — Cloud Run Overview",
   "tags": ["{{project_slug}}", "cloud-run"],
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "editable": true,
   "graphTooltip": 1,
   "refresh": "30s",
@@ -159,6 +159,129 @@
           "refId": "A",
           "projectId": "{{gcp_project}}",
           "queryText": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=~\"$service\" AND severity>=WARNING"
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "type": "row",
+      "title": "OTel telemetry — Mimir / Loki / Tempo / Pyroscope (collapsed; expand once app ships data)",
+      "collapsed": true,
+      "gridPos": {"x": 0, "y": 16, "w": 24, "h": 1},
+      "panels": [
+        {
+          "id": 101,
+          "type": "timeseries",
+          "title": "App span rate (req/s, from traces_spanmetrics)",
+          "description": "Alloy auto-generates span metrics from traces. Requires the app to emit OTel spans via OTLP to Tempo and Alloy to be configured with the spanmetrics connector.",
+          "gridPos": {"x": 0, "y": 17, "w": 12, "h": 8},
+          "datasource": {"type": "prometheus", "uid": "{{project_slug}}-prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"]},
+            "tooltip": {"mode": "multi", "sort": "desc"}
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {"type": "prometheus", "uid": "{{project_slug}}-prometheus"},
+              "expr": "sum by (service_name) (rate(traces_spanmetrics_calls_total{service_name=~\"$service\"}[$__rate_interval]))",
+              "legendFormat": "{{service_name}}"
+            }
+          ]
+        },
+        {
+          "id": 102,
+          "type": "timeseries",
+          "title": "App span p95 latency (ms)",
+          "description": "p95 of the spanmetrics latency histogram per service. Same data source requirement as the rate panel.",
+          "gridPos": {"x": 12, "y": 17, "w": 12, "h": 8},
+          "datasource": {"type": "prometheus", "uid": "{{project_slug}}-prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"]},
+            "tooltip": {"mode": "multi", "sort": "desc"}
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {"type": "prometheus", "uid": "{{project_slug}}-prometheus"},
+              "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(traces_spanmetrics_latency_bucket{service_name=~\"$service\"}[$__rate_interval]))) * 1000",
+              "legendFormat": "{{service_name}}"
+            }
+          ]
+        },
+        {
+          "id": 103,
+          "type": "logs",
+          "title": "App logs (Loki)",
+          "description": "Requires Alloy (or another log shipper) writing to Loki with a `service_name` label per Cloud Run service.",
+          "gridPos": {"x": 0, "y": 25, "w": 24, "h": 10},
+          "datasource": {"type": "loki", "uid": "{{project_slug}}-loki"},
+          "options": {
+            "showLabels": false,
+            "showTime": true,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {"type": "loki", "uid": "{{project_slug}}-loki"},
+              "expr": "{service_name=~\"$service\"}",
+              "queryType": "range",
+              "maxLines": 200
+            }
+          ]
+        },
+        {
+          "id": 104,
+          "type": "traces",
+          "title": "Recent traces (Tempo)",
+          "description": "TraceQL search filtered to selected service. Click a row to expand the full trace; spans link to Loki logs / Mimir metrics / Pyroscope profiles via the tracesToLogsV2 / tracesToMetrics / tracesToProfiles wiring on the Tempo data source.",
+          "gridPos": {"x": 0, "y": 35, "w": 12, "h": 10},
+          "datasource": {"type": "tempo", "uid": "{{project_slug}}-tempo"},
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {"type": "tempo", "uid": "{{project_slug}}-tempo"},
+              "queryType": "traceqlSearch",
+              "limit": 20,
+              "tableType": "traces",
+              "query": "{ resource.service.name =~ \"$service\" }"
+            }
+          ]
+        },
+        {
+          "id": 105,
+          "type": "flamegraph",
+          "title": "CPU flame (Pyroscope)",
+          "description": "Continuous CPU profile per service. Requires the Pyroscope SDK (Go / Python / Node / JVM) embedded in the app with the `service_name` tag set to the Cloud Run service name.",
+          "gridPos": {"x": 12, "y": 35, "w": 12, "h": 10},
+          "datasource": {"type": "grafana-pyroscope-datasource", "uid": "{{project_slug}}-pyroscope"},
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {"type": "grafana-pyroscope-datasource", "uid": "{{project_slug}}-pyroscope"},
+              "profileTypeId": "process_cpu:cpu:nanoseconds:cpu:nanoseconds",
+              "labelSelector": "{service_name=~\"$service\"}",
+              "groupBy": []
+            }
+          ]
         }
       ]
     }
