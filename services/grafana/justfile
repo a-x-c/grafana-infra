@@ -1,0 +1,103 @@
+set dotenv-load := false
+
+INFRA_DIR := "infra"
+GCP_PROJECT := "{{gcp_project}}"
+GH_REPO := "{{gh_repo}}"
+GRAFANA_URL := "https://{{grafana_stack}}.grafana.net"
+
+# Bootstrap: terraform init (run once, or after backend config change)
+init:
+    cd {{INFRA_DIR}} && terraform init
+
+# Plan against current state
+plan:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd {{INFRA_DIR}}
+    export TF_VAR_cloud_access_policy_token="$(gcloud secrets versions access latest --secret=grafana-cloud-access-policy-token --project={{GCP_PROJECT}})"
+    export TF_VAR_gcp_sa_jwt="$(gcloud secrets versions access latest --secret=grafana-cloud-reader-sa-key --project={{GCP_PROJECT}})"
+    terraform plan
+
+# Apply
+apply:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd {{INFRA_DIR}}
+    export TF_VAR_cloud_access_policy_token="$(gcloud secrets versions access latest --secret=grafana-cloud-access-policy-token --project={{GCP_PROJECT}})"
+    export TF_VAR_gcp_sa_jwt="$(gcloud secrets versions access latest --secret=grafana-cloud-reader-sa-key --project={{GCP_PROJECT}})"
+    terraform apply
+
+# Pull a dashboard from Grafana Cloud into dashboards/<slug>.json. Uses the
+# stack-admin token that TF minted (read from TF state) so no extra secret
+# fetch is needed.
+export-dashboard uid:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd {{INFRA_DIR}}
+    export GRAFANA_URL="{{GRAFANA_URL}}"
+    export GRAFANA_API_KEY="$(terraform output -raw stack_admin_token)"
+    ../scripts/export-dashboard.sh {{uid}}
+
+# List datasource IDs/UIDs on the stack (sanity check after apply)
+list-datasources:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd {{INFRA_DIR}}
+    TOK="$(terraform output -raw stack_admin_token)"
+    curl -sS -H "Authorization: Bearer $TOK" "{{GRAFANA_URL}}/api/datasources" \
+      | jq '.[] | {id, uid, name, type}'
+
+# Rotate the Grafana Cloud org access-policy token: prompts for new token,
+# writes to GCP + GH in one step. (Token is created in the grafana.com UI
+# under Access Policies — this is the bootstrap token, not the stack-admin
+# one TF mints.)
+rotate-cloud-token:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    read -s -p "Paste new Grafana Cloud access-policy token (glc_…): " token; echo
+    printf '%s' "$token" | gcloud secrets versions add grafana-cloud-access-policy-token --data-file=- --project={{GCP_PROJECT}}
+    printf '%s' "$token" | gh secret set GRAFANA_CLOUD_ACCESS_POLICY_TOKEN --repo {{GH_REPO}}
+
+# Rotate the stack-admin token that TF uses internally — taint + apply.
+rotate-stack-token:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd {{INFRA_DIR}}
+    export TF_VAR_cloud_access_policy_token="$(gcloud secrets versions access latest --secret=grafana-cloud-access-policy-token --project={{GCP_PROJECT}})"
+    export TF_VAR_gcp_sa_jwt="$(gcloud secrets versions access latest --secret=grafana-cloud-reader-sa-key --project={{GCP_PROJECT}})"
+    terraform taint grafana_cloud_stack_service_account_token.tf_admin
+    terraform apply
+
+# Sync GCP Secret Manager values into GitHub Secrets (run after rotating
+# either secret).
+sync-secrets-to-gh:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    gcloud secrets versions access latest --secret=grafana-cloud-access-policy-token --project={{GCP_PROJECT}} \
+      | gh secret set GRAFANA_CLOUD_ACCESS_POLICY_TOKEN --repo {{GH_REPO}}
+    gcloud secrets versions access latest --secret=grafana-cloud-reader-sa-key --project={{GCP_PROJECT}} \
+      | gh secret set GRAFANA_CLOUD_READER_SA_KEY --repo {{GH_REPO}}
+
+# Pull dashboard updates from the upstream grafana template into dashboards/.
+# Reads template URL + ref + per-app substitution vars from .template-vars.
+# Pass REF=v2026.05.20 to pin a tag; default is whatever TEMPLATE_REF is in
+# .template-vars (which itself defaults to main).
+sync-from-template REF="" *FLAGS="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    args=()
+    if [ -n "{{REF}}" ]; then args+=(--ref "{{REF}}"); fi
+    if [ -n "{{FLAGS}}" ]; then args+=({{FLAGS}}); fi
+    ./scripts/sync-from-template.sh "${args[@]}"
+
+# Show what would change without writing — useful in CI / before bumping a ref.
+sync-from-template-dry-run REF="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    args=(--dry-run)
+    if [ -n "{{REF}}" ]; then args+=(--ref "{{REF}}"); fi
+    ./scripts/sync-from-template.sh "${args[@]}"
+
+# Run dashboard convention validation locally (same as CI).
+validate-dashboards:
+    ./scripts/validate-dashboards.py

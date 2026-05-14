@@ -1,0 +1,98 @@
+name: Sync Grafana Template
+
+# Daily drift check against the upstream grafana template. If the
+# template's dashboards have changed (after re-applying this app's
+# substitutions from .template-vars), opens a PR with the diff. Reviewer
+# decides whether to merge.
+#
+# Adopt this workflow once you have the template pushed to a remote so the
+# CI runner can clone it. Until then, leave it disabled (cron commented).
+#
+# Configuration (set in repo Settings → Variables):
+#   - GRAFANA_TEMPLATE_URL  (optional override — defaults to .template-vars TEMPLATE_URL)
+#   - GRAFANA_TEMPLATE_REF  (optional override — defaults to .template-vars TEMPLATE_REF, then "main")
+
+on:
+  schedule:
+    - cron: '0 13 * * 1-5'   # weekdays 13:00 UTC ≈ 9am ET
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Template ref (branch/tag) to sync from'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  GRAFANA_DIR: '{{dest_path}}'
+
+jobs:
+  sync:
+    name: Sync from grafana template
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Resolve template URL + ref
+        id: vars
+        working-directory: ${{ env.GRAFANA_DIR }}
+        run: |
+          set -euo pipefail
+          if [ ! -f .template-vars ]; then
+            echo "::error::${{ env.GRAFANA_DIR }}/.template-vars missing" >&2
+            exit 1
+          fi
+          # shellcheck disable=SC1091
+          set -a; . ./.template-vars; set +a
+          URL="${{ vars.GRAFANA_TEMPLATE_URL }}"
+          URL="${URL:-${TEMPLATE_URL:-}}"
+          if [ -z "$URL" ]; then echo "::error::TEMPLATE_URL not set"; exit 1; fi
+          REF="${{ github.event.inputs.ref }}"
+          REF="${REF:-${{ vars.GRAFANA_TEMPLATE_REF }}}"
+          REF="${REF:-${TEMPLATE_REF:-main}}"
+          echo "url=$URL"  >> "$GITHUB_OUTPUT"
+          echo "ref=$REF"  >> "$GITHUB_OUTPUT"
+
+      - name: Run sync (write changes)
+        working-directory: ${{ env.GRAFANA_DIR }}
+        env:
+          TEMPLATE_URL: ${{ steps.vars.outputs.url }}
+        run: |
+          ./scripts/sync-from-template.sh --ref "${{ steps.vars.outputs.ref }}"
+
+      - name: Detect diff
+        id: diff
+        run: |
+          if git diff --quiet -- "${{ env.GRAFANA_DIR }}/dashboards/"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- "${{ env.GRAFANA_DIR }}/dashboards/"
+          fi
+
+      - name: Open / update PR
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: grafana-template/sync
+          delete-branch: true
+          title: "chore(grafana): sync dashboards from template @ ${{ steps.vars.outputs.ref }}"
+          commit-message: "chore(grafana): sync dashboards from template @ ${{ steps.vars.outputs.ref }}"
+          labels: grafana, automated
+          body: |
+            Automated sync from the grafana template.
+
+            - Source: `${{ steps.vars.outputs.url }}`
+            - Ref:    `${{ steps.vars.outputs.ref }}`
+            - Triggered by: `${{ github.event_name }}`
+
+            Review the diff under `${{ env.GRAFANA_DIR }}/dashboards/`. If the
+            templated changes are not desired for this app, close this PR —
+            local edits in app-specific dashboards (anything not present in
+            the template) are never touched.

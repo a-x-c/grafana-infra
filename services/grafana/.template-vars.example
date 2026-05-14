@@ -1,0 +1,34 @@
+# Per-app substitution vars consumed by sync-from-template.sh + pre-commit.
+# Copied at bootstrap with the values init.sh would use. Edit if values change.
+# This file is committed to git; it has no secrets.
+
+# Identity ─────────────────────────────────────────────────────────────────
+PROJECT_SLUG={{project_slug}}
+DISPLAY_NAME={{display_name}}
+GCP_PROJECT={{gcp_project}}
+
+# Grafana Cloud ────────────────────────────────────────────────────────────
+GRAFANA_STACK={{grafana_stack}}
+GRAFANA_CLOUD_ORG={{grafana_cloud_org}}
+
+# State / CI ───────────────────────────────────────────────────────────────
+TF_STATE_BUCKET={{tf_state_bucket}}
+GH_REPO={{gh_repo}}
+
+# Template source for `just sync-from-template` (+ the drift workflow).
+# Use file:///path on dev machines; switch to https://github.com/org/repo.git
+# once the template is pushed to a remote so CI can clone it.
+TEMPLATE_URL=file:///home/ac/Dev/templates/grafana
+TEMPLATE_REF=main
+
+# Cloud Run dashboard ──────────────────────────────────────────────────────
+# Pipe-joined list of service names this app runs. Patched into the
+# `service` template variable on cloud-run-overview.json. Leave empty if the
+# app doesn't have Cloud Run services.
+CLOUD_RUN_SERVICES=
+
+# GCE / GCS dashboard ──────────────────────────────────────────────────────
+# Primary VM name and primary GCS bucket name for the gce-vm-overview board.
+# Leave empty if the app doesn't run GCE / use GCS for its primary bucket.
+VM_NAME=
+BUCKET_NAME=

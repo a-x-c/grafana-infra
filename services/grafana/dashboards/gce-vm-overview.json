@@ -1,0 +1,268 @@
+{
+  "uid": "{{project_slug}}-gce-overview",
+  "title": "{{display_name}} — GCE VM Overview",
+  "tags": ["{{project_slug}}", "gce"],
+  "schemaVersion": 39,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "templating": {
+    "list": [
+      {
+        "name": "vm",
+        "label": "VM",
+        "type": "custom",
+        "multi": false,
+        "includeAll": false,
+        "current": { "selected": true, "text": "__VM_NAME__", "value": "__VM_NAME__" },
+        "options": [
+          { "selected": true, "text": "__VM_NAME__", "value": "__VM_NAME__" }
+        ],
+        "query": "__VM_NAME__"
+      },
+      {
+        "name": "bucket",
+        "label": "GCS bucket",
+        "type": "custom",
+        "multi": false,
+        "includeAll": false,
+        "current": { "selected": true, "text": "__BUCKET_NAME__", "value": "__BUCKET_NAME__" },
+        "options": [
+          { "selected": true, "text": "__BUCKET_NAME__", "value": "__BUCKET_NAME__" }
+        ],
+        "query": "__BUCKET_NAME__"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "CPU utilization",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "stackdriver", "uid": "{{project_slug}}-gcp-monitoring" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "metrics",
+          "metricQuery": {
+            "projectName": "{{gcp_project}}",
+            "metricType": "compute.googleapis.com/instance/cpu/utilization",
+            "filters": ["resource.label.instance_name", "=", "$vm"],
+            "aliasBy": "{{resource.label.instance_name}}",
+            "alignmentPeriod": "stackdriver-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "groupBys": ["resource.label.instance_name"]
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Network throughput",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "stackdriver", "uid": "{{project_slug}}-gcp-monitoring" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "metrics",
+          "metricQuery": {
+            "projectName": "{{gcp_project}}",
+            "metricType": "compute.googleapis.com/instance/network/received_bytes_count",
+            "filters": ["resource.label.instance_name", "=", "$vm"],
+            "aliasBy": "rx",
+            "alignmentPeriod": "stackdriver-auto",
+            "perSeriesAligner": "ALIGN_RATE",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "metrics",
+          "metricQuery": {
+            "projectName": "{{gcp_project}}",
+            "metricType": "compute.googleapis.com/instance/network/sent_bytes_count",
+            "filters": ["resource.label.instance_name", "=", "$vm"],
+            "aliasBy": "tx",
+            "alignmentPeriod": "stackdriver-auto",
+            "perSeriesAligner": "ALIGN_RATE",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Disk IOPS",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "stackdriver", "uid": "{{project_slug}}-gcp-monitoring" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "iops",
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "metrics",
+          "metricQuery": {
+            "projectName": "{{gcp_project}}",
+            "metricType": "compute.googleapis.com/instance/disk/read_ops_count",
+            "filters": ["resource.label.instance_name", "=", "$vm"],
+            "aliasBy": "read",
+            "alignmentPeriod": "stackdriver-auto",
+            "perSeriesAligner": "ALIGN_RATE",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "metrics",
+          "metricQuery": {
+            "projectName": "{{gcp_project}}",
+            "metricType": "compute.googleapis.com/instance/disk/write_ops_count",
+            "filters": ["resource.label.instance_name", "=", "$vm"],
+            "aliasBy": "write",
+            "alignmentPeriod": "stackdriver-auto",
+            "perSeriesAligner": "ALIGN_RATE",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "logs",
+      "title": "VM logs (WARNING+)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "googlecloud-logging-datasource", "uid": "{{project_slug}}-gcp-logging" },
+      "options": {
+        "showLabels": false,
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none",
+        "enableLogDetails": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "projectId": "{{gcp_project}}",
+          "queryText": "resource.type=\"gce_instance\" AND labels.\"compute.googleapis.com/resource_name\"=\"$vm\" AND severity>=WARNING"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "GCS bucket size (bytes)",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "stackdriver", "uid": "{{project_slug}}-gcp-monitoring" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "drawStyle": "line", "lineInterpolation": "stepAfter", "fillOpacity": 10 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "metrics",
+          "metricQuery": {
+            "projectName": "{{gcp_project}}",
+            "metricType": "storage.googleapis.com/storage/total_bytes",
+            "filters": ["resource.label.bucket_name", "=", "$bucket"],
+            "aliasBy": "{{resource.label.bucket_name}}",
+            "alignmentPeriod": "stackdriver-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_SUM",
+            "groupBys": ["resource.label.bucket_name"]
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "GCS object count",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "stackdriver", "uid": "{{project_slug}}-gcp-monitoring" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "metrics",
+          "metricQuery": {
+            "projectName": "{{gcp_project}}",
+            "metricType": "storage.googleapis.com/storage/object_count",
+            "filters": ["resource.label.bucket_name", "=", "$bucket"],
+            "aliasBy": "objects",
+            "alignmentPeriod": "stackdriver-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        }
+      ]
+    }
+  ]
+}

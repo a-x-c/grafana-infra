@@ -1,0 +1,17 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+!terraform.tfvars.example
+
+# Per-app substitution vars (created at bootstrap; not present in the bare template).
+# Apps commit their own; the template never does.
+services/grafana/.template-vars
+
+# Editor / OS noise
+.DS_Store
+*.swp
+*.swo

@@ -1,0 +1,1015 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": 12494,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "{{project_slug}}-bigquery"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "decimals": 2,
+          "displayName": "Total Cost ($)",
+          "mappings": [],
+          "min": 0,
+          "noValue": "No data",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "super-light-green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 4,
+        "x": 2,
+        "y": 0
+      },
+      "id": 20,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.1",
+      "targets": [
+        {
+          "dataset": "${VAR_DATASET}",
+          "format": "time_series",
+          "group": [
+            {
+              "params": [
+                "$__interval",
+                "none"
+              ],
+              "type": "time"
+            }
+          ],
+          "metricColumn": "none",
+          "orderByCol": "1",
+          "orderBySort": "1",
+          "partitioned": true,
+          "partitionedField": "",
+          "project": "${VAR_PROJECT}",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  CURRENT_TIMESTAMP() AS time,\n  SUM(cost) AS value\nFROM\n  `$source_table`\nWHERE\n  $__timeFilter(usage_start_time) AND\n  project.id IN ($project)\nGROUP BY 1\nORDER BY 1 ASC",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "cost"
+                ],
+                "type": "column"
+              },
+              {
+                "params": [
+                  "sum"
+                ],
+                "type": "aggregate"
+              },
+              {
+                "params": [
+                  "cost"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "sharded": false,
+          "table": "",
+          "timeColumn": "usage_start_time",
+          "timeColumnType": "TIMESTAMP",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            },
+            {
+              "name": "",
+              "params": [
+                "project.id",
+                "IN",
+                "($project)"
+              ],
+              "type": "expression"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "",
+      "transparent": true,
+      "type": "stat"
+    },
+    {
+      "aliasColors": {},
+      "breakPoint": "50%",
+      "cacheTimeout": null,
+      "combine": {
+        "label": "Others",
+        "threshold": 0
+      },
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "{{project_slug}}-bigquery"
+      },
+      "decimals": 2,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fontSize": "80%",
+      "format": "none",
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 51,
+      "interval": null,
+      "legend": {
+        "header": "Cost ($)",
+        "percentage": false,
+        "percentageDecimals": 2,
+        "show": true,
+        "values": true
+      },
+      "legendType": "Right side",
+      "links": [],
+      "maxDataPoints": 50,
+      "nullPointMode": "connected",
+      "pieType": "donut",
+      "strokeWidth": "1",
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "orderByCol": "1",
+          "orderBySort": "1",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  CURRENT_TIMESTAMP() AS time,\n  project.id AS metric,\n  SUM(cost) AS value\nFROM\n  `$source_table`\nWHERE\n  $__timeFilter(usage_start_time)\nGROUP BY 2\nORDER BY 3 DESC",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "-- value --"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "-- time --",
+          "timeColumnType": "TIMESTAMP",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Project Breakdown",
+      "type": "grafana-piechart-panel",
+      "valueName": "total"
+    },
+    {
+      "aliasColors": {},
+      "breakPoint": "50%",
+      "cacheTimeout": null,
+      "combine": {
+        "label": "Others",
+        "threshold": 0
+      },
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "{{project_slug}}-bigquery"
+      },
+      "decimals": 2,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fontSize": "80%",
+      "format": "none",
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 52,
+      "interval": null,
+      "legend": {
+        "header": "Cost ($)",
+        "show": true,
+        "values": true
+      },
+      "legendType": "Right side",
+      "links": [],
+      "maxDataPoints": 50,
+      "nullPointMode": "connected",
+      "pieType": "donut",
+      "strokeWidth": "1",
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "orderByCol": "1",
+          "orderBySort": "1",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  CURRENT_TIMESTAMP() AS time,\n  IF(pos > 5, 'Other', metric) AS metric,\n  SUM(value) AS value\nFROM (\n  SELECT\n    service.description AS metric,\n    SUM(cost) AS value,\n    ROW_NUMBER() OVER (ORDER BY SUM(cost) DESC) AS pos\n  FROM\n    `$source_table`\n  WHERE\n    $__timeFilter(usage_start_time) AND\n    project.id IN ($project)\n  GROUP BY 1\n)\nGROUP BY 2\nORDER BY metric != 'Other' DESC, 3 DESC",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "-- value --"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "-- time --",
+          "timeColumnType": "TIMESTAMP",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Top 5 Service Breakdown",
+      "type": "grafana-piechart-panel",
+      "valueName": "total"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "{{project_slug}}-bigquery"
+      },
+      "decimals": 2,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "hiddenSeries": false,
+      "id": 49,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "total",
+        "sortDesc": true,
+        "total": true,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "dataset": "${VAR_DATASET}",
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "orderByCol": "1",
+          "orderBySort": "1",
+          "partitioned": false,
+          "partitionedField": "",
+          "project": "${VAR_PROJECT}",
+          "rawQuery": true,
+          "rawSql": "SELECT *\nFROM (\n  SELECT\n    $__timeGroup(usage_start_time, 1d),\n    service.description AS metric,\n    SUM(cost) AS value\n  FROM\n    `$source_table`\n  WHERE\n    $__timeFilter(usage_start_time) AND project.id IN ($project)\n  GROUP BY 1, 2\n  ORDER BY 1 ASC\n)\nWHERE value > 0",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "-- value --"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "sharded": false,
+          "timeColumn": "-- time --",
+          "timeColumnType": "TIMESTAMP",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Service Breakdown",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 2,
+          "format": "none",
+          "label": "Cost ($)",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "{{project_slug}}-bigquery"
+      },
+      "decimals": 2,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "hiddenSeries": false,
+      "id": 42,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "total",
+        "sortDesc": true,
+        "total": true,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "convertToUTC": true,
+          "dataset": "${VAR_DATASET}",
+          "format": "time_series",
+          "group": [
+            {
+              "params": [
+                "1d",
+                "none"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "sku.description"
+              ],
+              "type": "column"
+            }
+          ],
+          "hide": false,
+          "metricColumn": "sku.description",
+          "orderByCol": "1",
+          "orderBySort": "1",
+          "partitioned": true,
+          "partitionedField": "",
+          "project": "${VAR_PROJECT}",
+          "rawQuery": true,
+          "rawSql": "SELECT * FROM (\n  SELECT\n    $__timeGroup(usage_start_time, 1d),\n    IFNULL(sku.description, '_') AS metric,\n    SUM(cost) AS value\n  FROM `$source_table`\n  WHERE\n    DATE(usage_start_time) >= DATE($__millisTimeFrom(_)) AND\n    DATE(usage_start_time) < DATE($__millisTimeTo(_)) AND\n    project.id IN ($project)\n  GROUP BY 1, 2\n  ORDER BY 1, 2\n)\nWHERE value >= 1",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "cost"
+                ],
+                "type": "column"
+              },
+              {
+                "params": [
+                  "sum"
+                ],
+                "type": "aggregate"
+              },
+              {
+                "params": [
+                  "cost"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "sharded": false,
+          "table": "",
+          "timeColumn": "usage_start_time",
+          "timeColumnType": "TIMESTAMP",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            },
+            {
+              "name": "",
+              "params": [
+                "project.id",
+                "IN",
+                "($project)"
+              ],
+              "type": "expression"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "SKU Breakdown",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 2,
+          "format": "none",
+          "label": "Cost ($)",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": true,
+      "datasource": {
+        "type": "grafana-bigquery-datasource",
+        "uid": "{{project_slug}}-bigquery"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "id": 30,
+      "panels": [
+        {
+          "aliasColors": {},
+          "breakPoint": "50%",
+          "cacheTimeout": null,
+          "combine": {
+            "label": "Others",
+            "threshold": ""
+          },
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "{{project_slug}}-bigquery"
+          },
+          "decimals": 2,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fontSize": "80%",
+          "format": "none",
+          "gridPos": {
+            "h": 12,
+            "w": 7,
+            "x": 0,
+            "y": 8
+          },
+          "id": 34,
+          "interval": null,
+          "legend": {
+            "header": "Cost ($)",
+            "percentage": true,
+            "percentageDecimals": 2,
+            "show": true,
+            "sort": "total",
+            "sortDesc": true,
+            "values": true
+          },
+          "legendType": "Under graph",
+          "links": [],
+          "maxDataPoints": 500,
+          "nullPointMode": "connected",
+          "pieType": "donut",
+          "strokeWidth": 1,
+          "targets": [
+            {
+              "dataset": "${VAR_DATASET}",
+              "format": "time_series",
+              "group": [
+                {
+                  "params": [
+                    "$__interval",
+                    "none"
+                  ],
+                  "type": "time"
+                },
+                {
+                  "params": [
+                    "service.description"
+                  ],
+                  "type": "column"
+                }
+              ],
+              "metricColumn": "service.description",
+              "orderByCol": "1",
+              "orderBySort": "1",
+              "partitioned": true,
+              "partitionedField": "",
+              "project": "${VAR_PROJECT}",
+              "rawQuery": false,
+              "rawSql": "SELECT\n  time_column,\n  value1\nFROM\n  metric_table\nWHERE\n  $__timeFilter(time_column)\n",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "cost"
+                    ],
+                    "type": "column"
+                  },
+                  {
+                    "params": [
+                      "sum"
+                    ],
+                    "type": "aggregate"
+                  },
+                  {
+                    "params": [
+                      "cost"
+                    ],
+                    "type": "alias"
+                  }
+                ]
+              ],
+              "sharded": false,
+              "table": "",
+              "timeColumn": "usage_start_time",
+              "timeColumnType": "TIMESTAMP",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                },
+                {
+                  "name": "",
+                  "params": [
+                    "project.id",
+                    "IN",
+                    "($project)"
+                  ],
+                  "type": "expression"
+                }
+              ]
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {}
+            }
+          ],
+          "type": "grafana-piechart-panel",
+          "valueName": "total"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "grafana-bigquery-datasource",
+            "uid": "{{project_slug}}-bigquery"
+          },
+          "decimals": 2,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 0,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 12,
+            "w": 17,
+            "x": 7,
+            "y": 8
+          },
+          "hiddenSeries": false,
+          "id": 32,
+          "legend": {
+            "alignAsTable": true,
+            "avg": false,
+            "current": false,
+            "hideEmpty": false,
+            "hideZero": true,
+            "max": false,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "sort": "total",
+            "sortDesc": true,
+            "total": true,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "convertToUTC": false,
+              "dataset": "${VAR_DATASET}",
+              "format": "time_series",
+              "group": [
+                {
+                  "params": [
+                    "1d",
+                    "none"
+                  ],
+                  "type": "time"
+                }
+              ],
+              "metricColumn": "service.description",
+              "orderByCol": "1",
+              "orderBySort": "1",
+              "partitioned": true,
+              "partitionedField": "",
+              "project": "${VAR_PROJECT}",
+              "rawQuery": false,
+              "rawSql": "-- $__millisTimeFrom(usage_start_time) // $__millisTimeTo(_)\nSELECT\n  $__timeGroupAlias(usage_start_time, 1d),\n  IFNULL(service.description, '_') AS metric,\n  SUM(cost) AS value\nFROM `$table_billing`\nWHERE\n  DATE(usage_start_time) >= DATE($__millisTimeFrom(_)) AND\n  DATE(usage_start_time) < DATE($__millisTimeTo(_)) AND\n  project.id IN ($project)\nGROUP BY 1, 2\nORDER BY 1, 2",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "cost"
+                    ],
+                    "type": "column"
+                  },
+                  {
+                    "params": [
+                      "sum"
+                    ],
+                    "type": "aggregate"
+                  },
+                  {
+                    "params": [
+                      "cost"
+                    ],
+                    "type": "alias"
+                  }
+                ]
+              ],
+              "sharded": false,
+              "table": "",
+              "timeColumn": "usage_start_time",
+              "timeColumnType": "TIMESTAMP",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                },
+                {
+                  "name": "",
+                  "params": [
+                    "project.id",
+                    "IN",
+                    "($project)"
+                  ],
+                  "type": "expression"
+                }
+              ]
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": 2,
+              "format": "none",
+              "label": "Cost ($)",
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        }
+      ],
+      "title": "Breakdown by Service",
+      "type": "row"
+    }
+  ],
+  "refresh": false,
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "{{project_slug}}",
+    "billing",
+    "gcp"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": {},
+        "datasource": {
+          "type": "grafana-bigquery-datasource",
+          "uid": "{{project_slug}}-bigquery"
+        },
+        "definition": "SELECT DISTINCT project.id FROM `$source_table`",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Project",
+        "multi": true,
+        "name": "project",
+        "options": [],
+        "query": "SELECT DISTINCT project.id FROM `$source_table`",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "current": {
+          "text": "{{gcp_project}}",
+          "value": "{{gcp_project}}",
+          "selected": true
+        },
+        "hide": 0,
+        "label": "Source Project",
+        "name": "source_project",
+        "options": [],
+        "query": "{{gcp_project}}",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "billing_export",
+          "value": "billing_export",
+          "selected": true
+        },
+        "hide": 0,
+        "label": "Source Dataset",
+        "name": "source_dataset",
+        "options": [],
+        "query": "billing_export",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "allValue": null,
+        "current": {},
+        "datasource": {
+          "type": "grafana-bigquery-datasource",
+          "uid": "{{project_slug}}-bigquery"
+        },
+        "definition": "SELECT CONCAT(table_catalog, \".\", table_schema, \".\", table_name) FROM `$source_project.$source_dataset.INFORMATION_SCHEMA.TABLES` WHERE REGEXP_CONTAINS(table_name, \"^gcp_billing_export_v1_\")",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Source Table",
+        "multi": false,
+        "name": "source_table",
+        "options": [],
+        "query": "SELECT CONCAT(table_catalog, \".\", table_schema, \".\", table_name) FROM `$source_project.$source_dataset.INFORMATION_SCHEMA.TABLES` WHERE REGEXP_CONTAINS(table_name, \"^gcp_billing_export_v1_\")",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      }
+    ]
+  },
+  "time": {
+    "from": "2020-06-01T00:00:00.000Z",
+    "to": "2020-06-30T00:00:00.000Z"
+  },
+  "timepicker": {
+    "hidden": false,
+    "nowDelay": "",
+    "refresh_intervals": [
+      "1d"
+    ]
+  },
+  "timezone": "",
+  "title": "{{display_name}} \u2014 GCP Billing Costs",
+  "description": "Display your Google Cloud Platform billing costs straight from BigQuery.",
+  "uid": "{{project_slug}}-gcp-billing"
+}

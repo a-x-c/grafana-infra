@@ -1,0 +1,40 @@
+# Pre-commit hooks for the grafana template + apps built from it.
+#
+# Install once: `pip install --user pre-commit && pre-commit install`
+# Run on all files: `pre-commit run --all-files`
+#
+# The validate-dashboard-conventions hook reads .template-vars (PROJECT_SLUG +
+# DISPLAY_NAME) so each app enforces its own naming. The pure template
+# (this repo) has no .template-vars and skips that check via env defaults.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-json
+        name: Dashboard JSON parseable
+        files: ^services/grafana/dashboards/.*\.json$
+      - id: end-of-file-fixer
+        files: ^services/grafana/.*\.(tf|yaml|yml|md|sh)$
+      - id: trailing-whitespace
+        files: ^services/grafana/.*\.(tf|yaml|yml|md|sh)$
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.99.0
+    hooks:
+      - id: terraform_fmt
+        files: ^services/grafana/infra/.*\.tf$
+
+  - repo: local
+    hooks:
+      - id: validate-dashboard-conventions
+        name: Validate dashboard UID/title/schemaVersion (and JSON Schema)
+        description: |
+          Project-convention check matching CI. Reads PROJECT_SLUG +
+          DISPLAY_NAME from services/grafana/.template-vars (or env vars).
+          Skipped on the bare template because vars resolve to placeholders.
+        entry: services/grafana/scripts/validate-dashboards.py
+        language: python
+        additional_dependencies: ['jsonschema==4.23.0']
+        files: ^services/grafana/dashboards/.*\.json$
+        pass_filenames: true
