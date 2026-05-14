@@ -112,13 +112,13 @@ If they don't have it in another project, print these instructions and **wait** 
 >    access policy that powers Loki/Mimir/Tempo/Pyroscope auth)
 > 5. Save. Click **Add token** on the new policy, copy the `glc_…` string.
 
-**Scope upgrade for existing tokens:** if the token already exists from
-the older two-scope era, `terraform apply` will fail on
-`grafana_cloud_access_policy.stack_reads` with an insufficient-scope
-error. Edit the existing access policy in the grafana.com UI and add
-`accesspolicies:read` + `accesspolicies:write`. Tokens issued by the
-policy continue working with the expanded scopes — no token rotation
-needed.
+The existing `axc` bootstrap policy was confirmed (May 2026) to already
+carry all the needed scopes, so apps adopting the template *after* imu /
+llms-blog don't need to touch the policy unless they're on a different
+Grafana Cloud org. If TF apply fails with `accesspolicies:write` /
+`accesspolicies:read` missing, edit the existing access policy in the
+grafana.com UI and add them — tokens issued by the policy continue
+working with the expanded scopes; no token rotation needed.
 
 Tell the user to paste with this command in their own terminal (never through chat):
 
