@@ -114,7 +114,11 @@ resource "grafana_data_source" "tempo" {
   type = "tempo"
   uid  = "{{project_slug}}-tempo"
   name = "Tempo ({{display_name}})"
-  url  = data.grafana_cloud_stack.main.traces_url
+
+  # `traces_url` returns the bare cortex-gateway host (correct for OTLP
+  # writes); the Grafana Tempo plugin issues health/search at
+  # `<url>/api/...`, which 404 without the `/tempo` tenant prefix.
+  url = "${data.grafana_cloud_stack.main.traces_url}/tempo"
 
   basic_auth_enabled  = true
   basic_auth_username = data.grafana_cloud_stack.main.traces_user_id
